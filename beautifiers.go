@@ -181,6 +181,34 @@ var BEAUTIFIERS = []Beautifier{
 		},
 	}),
 	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(> Task )(?P<name>:[^ ]+)(?P<state> [^ ]+)?$`),
+		FormatFns: map[string]FormatFn{
+			"name": bold,
+			"state": func(o *termenv.Output, v string) termenv.Style {
+				color := "15"
+				switch strings.TrimSpace(v) {
+				case "UP-TO-DATE":
+					color = "2"
+				case "FAILED":
+					color = "1"
+				}
+
+				return o.String(v).Foreground(o.Color(color))
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(?:(?P<successful>BUILD SUCCESSFUL)|(?P<failed>BUILD FAILED))( in .+)$`),
+		FormatFns: map[string]FormatFn{
+			"successful": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("2")).Bold()
+			},
+			"failed": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Bold()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
 		Pattern: regexp.MustCompile("^(?:(?P<crystal>  \\.)(?P<logo>   ____          _            )(?P<chevrons>__ _ _))|(?:(?P<crystal> /\\\\\\\\)(?P<logo> / ___'_ __ _ _\\(_\\)_ __  __ _ )(?P<chevrons>\\\\ \\\\ \\\\ \\\\))|(?:(?P<crystal>\\( \\( \\))(?P<logo>\\\\___ \\| '_ \\| '_\\| \\| '_ \\\\/ _` \\| )(?P<chevrons>\\\\ \\\\ \\\\ \\\\))|(?:(?P<crystal> \\\\\\\\/)(?P<logo>  ___\\)\\| \\|_\\)\\| \\| \\| \\| \\| \\|\\| \\(_\\| \\|  )(?P<chevrons>\\) \\) \\) \\)))|(?:(?P<crystal>  '  )(?P<logo>\\|____\\| \\.__\\|_\\| \\|_\\|_\\| \\|_\\\\__, \\|)(?P<chevrons> / / / /))|(?:(?P<underline> =========)(?P<logo>\\|_\\|)(?P<underline>==============)(?P<logo>\\|___/)(?P<underline>=)(?P<chevrons>/_/_/_/))$"),
 
 		FormatFns: map[string]FormatFn{
