@@ -154,6 +154,53 @@ var BEAUTIFIERS = []Beautifier{
 		FormatFns: map[string]FormatFn{"query": faint},
 	}),
 	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(?P<caused_by>Caused by: )?(?P<exception_path>[^ ]+\.)(?P<exception_name>[^ ]*Exception)(?P<colon>:)(?P<message>.*)$`),
+		FormatFns: map[string]FormatFn{
+			"caused_by": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Bold()
+			},
+			"exception_path": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1"))
+			},
+			"exception_name": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Bold()
+			},
+			"colon": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Faint()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`(?P<at>\tat )(?P<class>[^ ]+\.)(?P<method>[^ ]+\()(?P<file>[^ ]+:\d+)(?P<method>\))(?P<jar> ~\[[^ ]+:[^ ]+\])?`),
+		FormatFns: map[string]FormatFn{
+			"at": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Bold()
+			},
+			"class":     faint,
+			"file":      bold,
+			"jar":       faint,
+			"java_base": faint,
+		},
+		Preprocess: func(o *termenv.Output, ps []TextPart) []TextPart {
+			isJavaBase := false
+			for i := range ps {
+				p := ps[i]
+				if p.Name == "class" && strings.HasPrefix(p.Value, "java.base") {
+					isJavaBase = true
+					break
+				}
+			}
+
+			if isJavaBase {
+				for i := range ps {
+					ps[i].Name = "java_base"
+				}
+			}
+
+			return ps
+		},
+	}),
+	makeBeautifier(BeautifierData{
 		Pattern: regexp.MustCompile("^(?:(?P<crystal>  \\.)(?P<logo>   ____          _            )(?P<chevrons>__ _ _))|(?:(?P<crystal> /\\\\\\\\)(?P<logo> / ___'_ __ _ _\\(_\\)_ __  __ _ )(?P<chevrons>\\\\ \\\\ \\\\ \\\\))|(?:(?P<crystal>\\( \\( \\))(?P<logo>\\\\___ \\| '_ \\| '_\\| \\| '_ \\\\/ _` \\| )(?P<chevrons>\\\\ \\\\ \\\\ \\\\))|(?:(?P<crystal> \\\\\\\\/)(?P<logo>  ___\\)\\| \\|_\\)\\| \\| \\| \\| \\| \\|\\| \\(_\\| \\|  )(?P<chevrons>\\) \\) \\) \\)))|(?:(?P<crystal>  '  )(?P<logo>\\|____\\| \\.__\\|_\\| \\|_\\|_\\| \\|_\\\\__, \\|)(?P<chevrons> / / / /))|(?:(?P<underline> =========)(?P<logo>\\|_\\|)(?P<underline>==============)(?P<logo>\\|___/)(?P<underline>=)(?P<chevrons>/_/_/_/))$"),
 
 		FormatFns: map[string]FormatFn{
