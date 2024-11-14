@@ -209,6 +209,65 @@ var BEAUTIFIERS = []Beautifier{
 		},
 	}),
 	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(\[)(?P<info>INFO)(\] )(?P<sep>[-><]{3} )(?P<plugin_goal>[^ ]+ )(?<exe_id>.+ )(@ )(?P<artifact_id>[^ ]+ )(?P<sep>[-><]{3})$`),
+		FormatFns: map[string]FormatFn{
+			"sep": bold,
+			"plugin_goal": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("2"))
+			},
+			"exe_id": bold,
+			"artifact_id": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("6"))
+			},
+			"info": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Bold()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(\[)(?P<info>INFO)(\] )(?P<sep>-+)(?:(?:(?P<sep>[<] )(?P<title>.+)(?P<sep> [>]))|(?:(?P<sep>[[] )(?P<title_type2>.+)(?P<sep> [\]])))?(?P<sep>-+)$`),
+		FormatFns: map[string]FormatFn{
+			"sep": bold,
+			"title": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("6"))
+			},
+			"title_type2": bold,
+			"info": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Bold()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(\[)(?P<info>INFO)(\] )(?:(?P<success>BUILD SUCCESS)|(?P<failure>BUILD FAILURE))$`),
+		FormatFns: map[string]FormatFn{
+			"success": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("2")).Bold()
+			},
+			"failure": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Bold()
+			},
+			"info": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Bold()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(\[)(?P<info>INFO)(\].*)$`),
+		FormatFns: map[string]FormatFn{
+			"info": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Bold()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
+		Pattern: regexp.MustCompile(`^(\[)(?P<error>ERROR)(\].*)$`),
+		FormatFns: map[string]FormatFn{
+			"error": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("1")).Bold()
+			},
+		},
+	}),
+	makeBeautifier(BeautifierData{
 		Pattern: regexp.MustCompile("^(?:(?P<crystal>  \\.)(?P<logo>   ____          _            )(?P<chevrons>__ _ _))|(?:(?P<crystal> /\\\\\\\\)(?P<logo> / ___'_ __ _ _\\(_\\)_ __  __ _ )(?P<chevrons>\\\\ \\\\ \\\\ \\\\))|(?:(?P<crystal>\\( \\( \\))(?P<logo>\\\\___ \\| '_ \\| '_\\| \\| '_ \\\\/ _` \\| )(?P<chevrons>\\\\ \\\\ \\\\ \\\\))|(?:(?P<crystal> \\\\\\\\/)(?P<logo>  ___\\)\\| \\|_\\)\\| \\| \\| \\| \\| \\|\\| \\(_\\| \\|  )(?P<chevrons>\\) \\) \\) \\)))|(?:(?P<crystal>  '  )(?P<logo>\\|____\\| \\.__\\|_\\| \\|_\\|_\\| \\|_\\\\__, \\|)(?P<chevrons> / / / /))|(?:(?P<underline> =========)(?P<logo>\\|_\\|)(?P<underline>==============)(?P<logo>\\|___/)(?P<underline>=)(?P<chevrons>/_/_/_/))$"),
 
 		FormatFns: map[string]FormatFn{
