@@ -25,6 +25,8 @@ type BeautifierData struct {
 	Preprocess func(*termenv.Output, []TextPart) []TextPart
 }
 
+var URL_REGEX = regexp.MustCompile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+
 var BEAUTIFIERS = []Beautifier{
 	makeBeautifier(BeautifierData{
 		Pattern: regexp.MustCompile(`^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2})(\s)(?P<level>\s*\w+)(\s)(?P<pid>\d+)(\s+)(?P<separator>---)(\s+)(?P<thread>\[.*?\])(\s+)(?P<logger>\S+)(\s+)(?P<colon>:)(\s+)(?P<message>.*)$`),
@@ -108,7 +110,27 @@ var BEAUTIFIERS = []Beautifier{
 						o.String(mainPart).Foreground(o.Color(color)).Bold().String(),
 				)
 			},
-			"colon":     faint,
+			"colon": faint,
+			"message": func(o *termenv.Output, v string) termenv.Style {
+				parts := URL_REGEX.FindAllStringIndex(v, -1)
+				lastIndex := 0
+				var sb strings.Builder
+
+				for _, url := range parts {
+					if url[0] > lastIndex {
+						sb.WriteString(v[lastIndex:url[0]])
+					}
+
+					sb.WriteString(o.String(v[url[0]:url[1]]).Underline().String())
+					lastIndex = url[1]
+				}
+
+				if lastIndex < len(v) {
+					sb.WriteString(v[lastIndex:])
+				}
+
+				return o.String(sb.String())
+			},
 			"sql_debug": faint,
 		},
 		Preprocess: func(o *termenv.Output, ps []TextPart) []TextPart {
