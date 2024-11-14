@@ -1,8 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"math"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/muesli/termenv"
 )
@@ -58,7 +63,50 @@ var BEAUTIFIERS = []Beautifier{
 			"separator": faint,
 			"thread":    faint,
 			"logger": func(o *termenv.Output, v string) termenv.Style {
-				return o.String(v).Foreground(o.Color("6"))
+				// djb2 hashing function
+				var hash uint32 = 5381
+				for i := 0; i < len(v); i++ {
+					hash = ((hash << 5) + hash) + uint32(v[i])
+				}
+
+				// bright colors only
+				h := float64(hash % 360)
+				s := float64(70 + (hash % 30))
+				l := float64(60 + (hash % 10))
+
+				// convert hsl to hex: https://stackoverflow.com/a/44134328
+				l /= 100
+				a := s * min(l, 1-l) / 100
+				f := func(n float64) string {
+					k := math.Mod(n+h/30, 12)
+					color := l - a*max(min(min(k-3, 9-k), 1), -1)
+					hex := strconv.FormatInt(int64(math.Round(255*color)), 16)
+					if len(hex) == 1 {
+						hex = "0" + hex
+					}
+					return hex
+				}
+				color := fmt.Sprintf("#%s%s%s", f(0), f(8), f(4))
+
+				parts := strings.Split(v, ".")
+				mainPart := ""
+				var sb strings.Builder
+				for i, part := range parts {
+					if i != 0 {
+						sb.WriteString(".")
+					}
+
+					if i == len(parts)-1 && isFirstCharUppercase(part) {
+						mainPart = part
+					} else {
+						sb.WriteString(part)
+					}
+				}
+
+				return o.String(
+					o.String(sb.String()).Foreground(o.Color(color)).String() +
+						o.String(mainPart).Foreground(o.Color(color)).Bold().String(),
+				)
 			},
 			"colon":     faint,
 			"sql_debug": faint,
@@ -148,4 +196,12 @@ func faint(o *termenv.Output, v string) termenv.Style {
 
 func bold(o *termenv.Output, v string) termenv.Style {
 	return o.String(v).Bold()
+}
+
+func isFirstCharUppercase(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	firstRune, _ := utf8.DecodeRuneInString(s)
+	return unicode.IsUpper(firstRune)
 }
