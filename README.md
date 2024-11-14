@@ -13,13 +13,13 @@ make
 ### Maven
 
 ```sh
-./mvnw spring-boot:run | sbbeautify
+./mvnw spring-boot:run |& sbbeautify
 ```
 
 ### Gradle
 
 ```sh
-./gradlew bootRun | sbbeautify
+./gradlew bootRun |& sbbeautify
 ```
 
 ## Inspiration
