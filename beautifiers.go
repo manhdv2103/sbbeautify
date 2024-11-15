@@ -151,7 +151,7 @@ var BEAUTIFIERS = []Beautifier{
 		},
 	}),
 	makeBeautifier(BeautifierData{
-		Pattern: regexp.MustCompile(`(?P<at>\tat )(?P<class>[^ ]+\.)(?P<method>[^ .]+\()(?P<file>[^ ]+:\d+)(?P<method>\))(?P<jar> ~\[[^ ]+:[^ ]+\])?`),
+		Pattern: regexp.MustCompile(`(?P<at>\tat )(?P<class>[^ ]+\.)(?P<method>[^ .]+\()(?:(?P<file>[^ ]+:\d+)|(?P<native>Native Method))(?P<method>\))(?P<jar> ~\[[^ ]+:[^ ]+\])?`),
 		FormatFns: map[string]FormatFn{
 			"at": func(o *termenv.Output, v string) termenv.Style {
 				return o.String(v).Foreground(o.Color("1")).Bold()
