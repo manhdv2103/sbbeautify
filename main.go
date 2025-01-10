@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/muesli/termenv"
 )
@@ -11,8 +12,22 @@ import (
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	output := termenv.NewOutput(os.Stdout)
+	linePrinted := false
+	t := time.Now()
 
 	for scanner.Scan() {
+		now := time.Now()
+		duration := now.Sub(t)
+		if linePrinted && duration.Seconds() > 5 {
+			fmt.Println()
+			fmt.Println(output.String(
+				fmt.Sprintf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫ After %s", duration),
+			).Bold())
+			fmt.Println()
+		}
+		linePrinted = true
+		t = now
+
 		line := scanner.Text()
 		beautifySuccess := false
 		for _, beautify := range BEAUTIFIERS {
