@@ -30,7 +30,7 @@ var BEAUTIFIERS = []Beautifier{
 		Pattern: regexp.MustCompile(`^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2})(\s)(?P<level>\s*\w+)(\s)(?P<pid>\d+)(\s+)(?P<separator>---)(\s+)(?P<thread>\[.*?\])(\s+)(?P<logger>\S+)(\s+)(?P<colon>:)(\s+)(?P<message>.*)$`),
 		FormatFns: map[string]FormatFn{
 			"timestamp": func(o *termenv.Output, v string) termenv.Style {
-				return o.String(v).Italic().Faint()
+				return o.String(v).Italic().Faint().Underline()
 			},
 			"level": func(o *termenv.Output, v string) termenv.Style {
 				color := "15"
