@@ -12,7 +12,7 @@ import (
 	"github.com/muesli/termenv"
 )
 
-type Beautifier = func(*termenv.Output, string) (string, bool)
+type Beautifier = func(*termenv.Output, string, string) (string, bool)
 
 type FormatFn = func(*termenv.Output, string) termenv.Style
 type TextPart struct {
@@ -22,7 +22,7 @@ type TextPart struct {
 type BeautifierData struct {
 	Pattern    *regexp.Regexp
 	FormatFns  map[string]FormatFn
-	Preprocess func(*termenv.Output, []TextPart) []TextPart
+	Preprocess func(*termenv.Output, []TextPart, string) []TextPart
 }
 
 var BEAUTIFIERS = []Beautifier{
@@ -112,7 +112,7 @@ var BEAUTIFIERS = []Beautifier{
 			"message":   highlightUrls,
 			"sql_debug": faint,
 		},
-		Preprocess: func(o *termenv.Output, ps []TextPart) []TextPart {
+		Preprocess: func(o *termenv.Output, ps []TextPart, _ string) []TextPart {
 			sqlDebug := false
 			for i := range ps {
 				if sqlDebug {
@@ -161,20 +161,47 @@ var BEAUTIFIERS = []Beautifier{
 			"non_file":  faint,
 			"jar":       faint,
 			"java_base": faint,
+			"proj_class": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Faint()
+			},
+			"proj_method": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4"))
+			},
+			"proj_file": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Bold()
+			},
+			"proj_non_file": func(o *termenv.Output, v string) termenv.Style {
+				return o.String(v).Foreground(o.Color("4")).Faint()
+			},
 		},
-		Preprocess: func(o *termenv.Output, ps []TextPart) []TextPart {
+		Preprocess: func(o *termenv.Output, ps []TextPart, basePackage string) []TextPart {
 			isJavaBase := false
+			isProjBase := false
 			for i := range ps {
 				p := ps[i]
-				if p.Name == "class" && strings.HasPrefix(p.Value, "java.base") {
-					isJavaBase = true
-					break
+				if p.Name == "class" {
+					if strings.HasPrefix(p.Value, "java.base") {
+						isJavaBase = true
+						break
+					} else if basePackage != "" && strings.HasPrefix(p.Value, basePackage) {
+						isProjBase = true
+						break
+					}
 				}
 			}
 
 			if isJavaBase {
 				for i := range ps {
 					ps[i].Name = "java_base"
+				}
+			}
+
+			if isProjBase {
+				for i := range ps {
+					switch ps[i].Name {
+					case "class", "method", "file", "non_file":
+						ps[i].Name = "proj_" + ps[i].Name
+					}
 				}
 			}
 
@@ -291,7 +318,7 @@ var BEAUTIFIERS = []Beautifier{
 }
 
 func makeBeautifier(b BeautifierData) Beautifier {
-	return func(o *termenv.Output, v string) (string, bool) {
+	return func(o *termenv.Output, v string, basePackage string) (string, bool) {
 		matches := b.Pattern.FindStringSubmatch(v)
 		if matches == nil {
 			return "", false
@@ -310,7 +337,7 @@ func makeBeautifier(b BeautifierData) Beautifier {
 		}
 
 		if b.Preprocess != nil {
-			parts = b.Preprocess(o, parts)
+			parts = b.Preprocess(o, parts, basePackage)
 		}
 
 		var sb strings.Builder
