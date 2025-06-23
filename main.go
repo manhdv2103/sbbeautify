@@ -32,7 +32,7 @@ func main() {
 		if linePrinted && duration.Seconds() > 5 {
 			fmt.Println()
 			fmt.Println(output.String(
-				fmt.Sprintf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫ After %s", duration),
+				fmt.Sprintf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫ After %s", duration.Round(time.Millisecond)),
 			).Bold())
 			fmt.Println()
 		}
