@@ -21,13 +21,17 @@ type TextPart struct {
 }
 type BeautifierData struct {
 	Pattern    *regexp.Regexp
+	Patterns   []*regexp.Regexp
 	FormatFns  map[string]FormatFn
 	Preprocess func(*termenv.Output, []TextPart, string) []TextPart
 }
 
 var BEAUTIFIERS = []Beautifier{
 	makeBeautifier(BeautifierData{
-		Pattern: regexp.MustCompile(`^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2})(\s)(?P<level>\s*\w+)(\s)(?P<pid>\d+)(\s+)(?P<separator>---)(\s+)(?P<thread>\[.*?\])(\s+)(?P<logger>\S+)(\s+)(?P<colon>:)(\s+)(?P<message>.*)$`),
+		Patterns: []*regexp.Regexp{
+			regexp.MustCompile(`^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2})(\s)(?P<level>\s*\w+)(\s)(?P<pid>\d+)(\s+)(?P<separator>---)(\s+)(?P<thread>\[.*?\])(\s+)(?P<logger>\S+)(\s+)(?P<separator>:)(\s+)(?P<message>.*)$`),
+			regexp.MustCompile(`^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s+)(?P<thread>\[.*?\])(\s+)(?P<level>\s*\w+\s*)(\s+)(?P<logger>\S+)(\s+)(?P<separator>-)(\s+)(?P<message>.*)$`),
+		},
 		FormatFns: map[string]FormatFn{
 			"timestamp": func(o *termenv.Output, v string) termenv.Style {
 				return o.String(v).Italic().Faint().Underline()
@@ -108,7 +112,6 @@ var BEAUTIFIERS = []Beautifier{
 						o.String(mainPart).Foreground(o.Color(color)).Bold().String(),
 				)
 			},
-			"colon":     faint,
 			"message":   highlightUrls,
 			"sql_debug": faint,
 		},
@@ -323,38 +326,47 @@ var BEAUTIFIERS = []Beautifier{
 
 func makeBeautifier(b BeautifierData) Beautifier {
 	return func(o *termenv.Output, v string, basePackage string) (string, bool) {
-		matches := b.Pattern.FindStringSubmatch(v)
-		if matches == nil {
-			return "", false
+		patterns := b.Patterns
+		if patterns == nil {
+			patterns = []*regexp.Regexp{b.Pattern}
 		}
 
-		parts := make([]TextPart, 0)
-		for i, name := range b.Pattern.SubexpNames() {
-			if i == 0 {
+		for _, pattern := range patterns {
+			matches := pattern.FindStringSubmatch(v)
+			if matches == nil {
 				continue
 			}
 
-			parts = append(parts, TextPart{
-				Name:  name,
-				Value: matches[i],
-			})
-		}
+			parts := make([]TextPart, 0)
+			for i, name := range pattern.SubexpNames() {
+				if i == 0 {
+					continue
+				}
 
-		if b.Preprocess != nil {
-			parts = b.Preprocess(o, parts, basePackage)
-		}
-
-		var sb strings.Builder
-		for _, part := range parts {
-			format := b.FormatFns[part.Name]
-			if format == nil {
-				sb.WriteString(part.Value)
-			} else {
-				sb.WriteString(format(o, part.Value).String())
+				parts = append(parts, TextPart{
+					Name:  name,
+					Value: matches[i],
+				})
 			}
+
+			if b.Preprocess != nil {
+				parts = b.Preprocess(o, parts, basePackage)
+			}
+
+			var sb strings.Builder
+			for _, part := range parts {
+				format := b.FormatFns[part.Name]
+				if format == nil {
+					sb.WriteString(part.Value)
+				} else {
+					sb.WriteString(format(o, part.Value).String())
+				}
+			}
+
+			return sb.String(), true
 		}
 
-		return sb.String(), true
+		return "", false
 	}
 }
 
